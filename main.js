@@ -49,7 +49,7 @@ window.onkeydown = function(e) {
         $t.bind(elem.textInput, 'input', function(ev) { 
             let size = elem.textInput.value.length;
             elem.textInput.size = size > 0 ? size : 1;
-            box.setDice(textInput.value);
+            box.setDice(elem.textInput.value);
         });
         $t.bind(elem.textInput, 'focus', function(ev) {
             elem.diceLimit.style.display = 'none';
@@ -72,7 +72,7 @@ window.onkeydown = function(e) {
             ev.preventDefault();
         });
 
-        box.setDice(textInput.value);
+        box.setDice(elem.textInput.value);
         //box.start_throw(); //start by throwing all the dice on the table
 
         show_instructions(true);
@@ -94,7 +94,7 @@ window.onkeydown = function(e) {
             }
             if(numD100 === '') numD100 = '1';
             //console.log('num d100s: ' + numD100);
-            for(let i = 0; i < numD100; i++) {
+            for(let i = 0; i < parseInt(numD100, 10); i++) {
                 inputVal += '+d9';
             }
         }
@@ -136,11 +136,12 @@ window.onkeydown = function(e) {
         var rows = elem.diceConfigRows.querySelectorAll('.dice-config-row');
         diceConfig = [];
         rows.forEach(function(row, i) {
+            var type = row.dataset.type || '';
             var diceColor = row.querySelector('.dc-body').value;
             var labelColor = row.querySelector('.dc-label').value;
             var symbolsRaw = row.querySelector('.dc-symbols').value.trim();
             var faceLabels = symbolsRaw ? symbolsRaw.split(',').map(function(s) { return s.trim(); }) : [];
-            diceConfig[i] = { diceColor: diceColor, labelColor: labelColor, faceLabels: faceLabels };
+            diceConfig[i] = { _type: type, diceColor: diceColor, labelColor: labelColor, faceLabels: faceLabels };
         });
         box.setDiceOptions(diceConfig);
         elem.customizePanel.style.display = 'none';
@@ -166,18 +167,21 @@ window.onkeydown = function(e) {
     function _buildCustomizeRows(diceSet) {
         elem.diceConfigRows.innerHTML = '';
         diceSet.forEach(function(type, i) {
-            var stored = diceConfig[i] || {};
+            // Only restore saved config if it was recorded for the same die type at this position
+            var stored = (diceConfig[i] && diceConfig[i]._type === type) ? diceConfig[i] : {};
             var faceCount = FACE_VALUE_COUNTS[type] || 6;
             var placeholder = [];
             for (var f = 1; f <= Math.min(faceCount, 6); f++) placeholder.push('sym' + f);
             if (faceCount > 6) placeholder.push('...');
 
-            // Escape double-quotes so they don't break the value="..." HTML attribute
+            // Escape special characters so they don't break the value="..." HTML attribute
             var symbolsVal = ((stored.faceLabels || []).join(','))
-                .replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
             var row = document.createElement('div');
             row.className = 'dice-config-row';
+            row.dataset.type = type;
             row.innerHTML =
                 '<span class="dc-type">' + type + '</span>' +
                 '<label>Body <input type="color" class="dc-body" value="' + (stored.diceColor || DEFAULT_DICE_COLOR) + '"></label>' +
