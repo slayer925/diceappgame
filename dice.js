@@ -588,12 +588,15 @@ const DICE = (function() {
     // @brief build a labels array for custom face symbols
     // @param symbols (array of strings) - one per face value, in order from dice_face_range[dieType][0] to [1]
     // @param dieType (string) - e.g. 'd6'
-    // Labels array layout: index 0 = blank (interior/back face), index 1 = unused value-0 placeholder,
-    // index 2+ = one label per face value starting at range[0].
+    // Labels array layout: materialIndex = face_value + 1, so labels[face_value + 1] = label for that face.
+    // Indexes 0..range[0] are blank (back face + placeholder for any face values below range[0]).
     // This mirrors the layout of standart_d20_dice_face_labels used by create_dice_materials.
     function build_custom_labels(symbols, dieType) {
         var range = CONSTS.dice_face_range[dieType];
-        var labels = [' ', ' ']; // index 0 = back face, index 1 = value-0 placeholder (unused for most die types)
+        // Prepend (range[0] + 1) blanks: index 0 = back face, indexes 1..range[0] = unused placeholders
+        // (e.g. d6 has range[0]=1 so 2 blanks; d10 has range[0]=0 so just 1 blank)
+        var labels = [];
+        for (var j = 0; j <= range[0]; j++) labels.push(' ');
         for (var v = range[0]; v <= range[1]; v++) {
             var idx = v - range[0];
             labels.push((symbols[idx] !== undefined && symbols[idx] !== '') ? String(symbols[idx]) : String(v));

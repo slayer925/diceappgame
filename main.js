@@ -172,6 +172,10 @@ window.onkeydown = function(e) {
             for (var f = 1; f <= Math.min(faceCount, 6); f++) placeholder.push('sym' + f);
             if (faceCount > 6) placeholder.push('...');
 
+            // Escape double-quotes so they don't break the value="..." HTML attribute
+            var symbolsVal = ((stored.faceLabels || []).join(','))
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
             var row = document.createElement('div');
             row.className = 'dice-config-row';
             row.innerHTML =
@@ -180,7 +184,7 @@ window.onkeydown = function(e) {
                 '<label>Label <input type="color" class="dc-label" value="' + (stored.labelColor || DEFAULT_LABEL_COLOR) + '"></label>' +
                 '<label class="dc-sym-label">Symbols ' +
                     '<input type="text" class="dc-symbols" placeholder="' + placeholder.join(',') + '" ' +
-                    'value="' + ((stored.faceLabels || []).join(',')) + '">' +
+                    'value="' + symbolsVal + '">' +
                 '</label>';
             elem.diceConfigRows.appendChild(row);
         });
