@@ -22,6 +22,12 @@ window.onkeydown = function(e) {
         userTyping: false
     }
     var box = null;
+    var diceConfig = []; // per-die options: [{diceColor, labelColor, faceLabels}, ...]
+
+    // face counts per die type (for symbol input placeholder)
+    var FACE_COUNTS = { d4: 4, d6: 6, d8: 8, d9: 10, d10: 10, d12: 12, d20: 20, d100: 10 };
+    var DEFAULT_DICE_COLOR = '#202020';
+    var DEFAULT_LABEL_COLOR = '#aaaaaa';
 
     that.init = function() {
         elem.container = $t.id('diceRoller');
@@ -31,6 +37,8 @@ window.onkeydown = function(e) {
         elem.instructions = $t.id('instructions');
         elem.center_div = $t.id('center_div');
         elem.diceLimit = $t.id('diceLimit');
+        elem.customizePanel = $t.id('customizePanel');
+        elem.diceConfigRows = $t.id('diceConfigRows');
 
         box = new DICE.dice_box(elem.container);
         box.bind_swipe(elem.center_div, before_roll, after_roll);
@@ -112,6 +120,73 @@ window.onkeydown = function(e) {
         vars.userTyping = true;
         elem.textInput.focus();
     }
+
+    // ---- CUSTOMIZE PANEL ----
+
+    that.showCustomize = function() {
+        var notation = DICE.parse_notation(elem.textInput.value);
+        if (notation.set.length === 0) return;
+        show_numPad(false);
+        show_instructions(false);
+        _buildCustomizeRows(notation.set);
+        elem.customizePanel.style.display = 'inline-block';
+    }
+
+    that.applyCustomize = function() {
+        var rows = elem.diceConfigRows.querySelectorAll('.dice-config-row');
+        diceConfig = [];
+        rows.forEach(function(row, i) {
+            var diceColor = row.querySelector('.dc-body').value;
+            var labelColor = row.querySelector('.dc-label').value;
+            var symbolsRaw = row.querySelector('.dc-symbols').value.trim();
+            var faceLabels = symbolsRaw ? symbolsRaw.split(',').map(function(s) { return s.trim(); }) : [];
+            diceConfig[i] = { diceColor: diceColor, labelColor: labelColor, faceLabels: faceLabels };
+        });
+        box.setDiceOptions(diceConfig);
+        elem.customizePanel.style.display = 'none';
+        show_instructions(true);
+    }
+
+    that.cancelCustomize = function() {
+        elem.customizePanel.style.display = 'none';
+        show_instructions(true);
+    }
+
+    that.resetCustomize = function() {
+        diceConfig = [];
+        box.setDiceOptions([]);
+        var rows = elem.diceConfigRows.querySelectorAll('.dice-config-row');
+        rows.forEach(function(row) {
+            row.querySelector('.dc-body').value = DEFAULT_DICE_COLOR;
+            row.querySelector('.dc-label').value = DEFAULT_LABEL_COLOR;
+            row.querySelector('.dc-symbols').value = '';
+        });
+    }
+
+    function _buildCustomizeRows(diceSet) {
+        elem.diceConfigRows.innerHTML = '';
+        diceSet.forEach(function(type, i) {
+            var stored = diceConfig[i] || {};
+            var faceCount = FACE_COUNTS[type] || 6;
+            var placeholder = [];
+            for (var f = 1; f <= Math.min(faceCount, 6); f++) placeholder.push('sym' + f);
+            if (faceCount > 6) placeholder.push('...');
+
+            var row = document.createElement('div');
+            row.className = 'dice-config-row';
+            row.innerHTML =
+                '<span class="dc-type">' + type + '</span>' +
+                '<label>Body <input type="color" class="dc-body" value="' + (stored.diceColor || DEFAULT_DICE_COLOR) + '"></label>' +
+                '<label>Label <input type="color" class="dc-label" value="' + (stored.labelColor || DEFAULT_LABEL_COLOR) + '"></label>' +
+                '<label class="dc-sym-label">Symbols ' +
+                    '<input type="text" class="dc-symbols" placeholder="' + placeholder.join(',') + '" ' +
+                    'value="' + ((stored.faceLabels || []).join(',')) + '">' +
+                '</label>';
+            elem.diceConfigRows.appendChild(row);
+        });
+    }
+
+    // ---- END CUSTOMIZE PANEL ----
 
     function _handleInput() {
         let text = elem.textInput.value;

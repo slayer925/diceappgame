@@ -30,6 +30,7 @@
             inputmode="none"
             virtualkeyboardpolicy="manual"
             value="1d4+1d6+1d8+1d10+1d12+1d20"></input>
+            <button id="customizeBtn" onclick="main.showCustomize()" title="Customize dice colors and symbols">🎨</button>
         </div>
         <div id="diceLimit" style="display:none">
             Wow that's a lot of dice! <br> 
@@ -70,7 +71,18 @@
             </table> 
             <button onclick="main.clearInput()">CLEAR</button>
             <button onclick="main.setInput()">OK</button>           
-        </div> 
+        </div>
+        <div id="customizePanel" class="center_field" style="display:none">
+            <div id="customizePanelContent">
+                <h3>🎨 Customize Dice</h3>
+                <div id="diceConfigRows"></div>
+                <div class="customize-buttons">
+                    <button onclick="main.applyCustomize()">Apply</button>
+                    <button onclick="main.cancelCustomize()">Cancel</button>
+                    <button onclick="main.resetCustomize()">Reset</button>
+                </div>
+            </div>
+        </div>
         <div class="bottom_field">
             <span id="result"></span>
         </div>  
