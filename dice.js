@@ -517,37 +517,37 @@ const DICE = (function() {
 
     threeD_dice.create_d6 = function(opts) {
         if (!this.d6_geometry) this.d6_geometry = create_d6_geometry(vars.scale * 1.1);
-        var material = _make_dice_material(opts, 'd6', vars.scale / 2, 0.9, this, '_d6_def_material');
+        var material = _make_dice_material(opts, 'd6', vars.scale / 2, 0.9, this, 'd6_material');
         return new THREE.Mesh(this.d6_geometry, material);
     }
 
     threeD_dice.create_d8 = function(opts) {
         if (!this.d8_geometry) this.d8_geometry = create_d8_geometry(vars.scale);
-        var material = _make_dice_material(opts, 'd8', vars.scale / 2, 1.4, this, '_d8_def_material');
+        var material = _make_dice_material(opts, 'd8', vars.scale / 2, 1.4, this, 'd8_material');
         return new THREE.Mesh(this.d8_geometry, material);
     }
 
     threeD_dice.create_d9 = function(opts) {
         if (!this.d10_geometry) this.d10_geometry = create_d10_geometry(vars.scale * 0.9);
-        var material = _make_dice_material(opts, 'd9', vars.scale / 2, 1.0, this, '_d9_def_material');
+        var material = _make_dice_material(opts, 'd9', vars.scale / 2, 1.0, this, 'd9_material');
         return new THREE.Mesh(this.d10_geometry, material);
     }
 
     threeD_dice.create_d10 = function(opts) {
         if (!this.d10_geometry) this.d10_geometry = create_d10_geometry(vars.scale * 0.9);
-        var material = _make_dice_material(opts, 'd10', vars.scale / 2, 1.0, this, '_d10_def_material');
+        var material = _make_dice_material(opts, 'd10', vars.scale / 2, 1.0, this, 'd10_material');
         return new THREE.Mesh(this.d10_geometry, material);
     }
 
     threeD_dice.create_d12 = function(opts) {
         if (!this.d12_geometry) this.d12_geometry = create_d12_geometry(vars.scale * 0.9);
-        var material = _make_dice_material(opts, 'd12', vars.scale / 2, 1.0, this, '_d12_def_material');
+        var material = _make_dice_material(opts, 'd12', vars.scale / 2, 1.0, this, 'd12_material');
         return new THREE.Mesh(this.d12_geometry, material);
     }
 
     threeD_dice.create_d20 = function(opts) {
         if (!this.d20_geometry) this.d20_geometry = create_d20_geometry(vars.scale);
-        var material = _make_dice_material(opts, 'd20', vars.scale / 2, 1.2, this, '_d20_def_material');
+        var material = _make_dice_material(opts, 'd20', vars.scale / 2, 1.2, this, 'd20_material');
         return new THREE.Mesh(this.d20_geometry, material);
     }
 
@@ -586,11 +586,14 @@ const DICE = (function() {
     }
 
     // @brief build a labels array for custom face symbols
-    // @param symbols (array of strings) - one per face value, ordered from min to max face value
+    // @param symbols (array of strings) - one per face value, in order from dice_face_range[dieType][0] to [1]
     // @param dieType (string) - e.g. 'd6'
+    // Labels array layout: index 0 = blank (interior/back face), index 1 = unused value-0 placeholder,
+    // index 2+ = one label per face value starting at range[0].
+    // This mirrors the layout of standart_d20_dice_face_labels used by create_dice_materials.
     function build_custom_labels(symbols, dieType) {
         var range = CONSTS.dice_face_range[dieType];
-        var labels = [' ', ' ']; // index 0 = blank, index 1 = placeholder for value 0
+        var labels = [' ', ' ']; // index 0 = back face, index 1 = value-0 placeholder (unused for most die types)
         for (var v = range[0]; v <= range[1]; v++) {
             var idx = v - range[0];
             labels.push((symbols[idx] !== undefined && symbols[idx] !== '') ? String(symbols[idx]) : String(v));

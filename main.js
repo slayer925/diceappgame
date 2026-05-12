@@ -24,8 +24,8 @@ window.onkeydown = function(e) {
     var box = null;
     var diceConfig = []; // per-die options: [{diceColor, labelColor, faceLabels}, ...]
 
-    // face counts per die type (for symbol input placeholder)
-    var FACE_COUNTS = { d4: 4, d6: 6, d8: 8, d9: 10, d10: 10, d12: 12, d20: 20, d100: 10 };
+    // Number of distinct face values per die type (used to build symbol input placeholders)
+    var FACE_VALUE_COUNTS = { d4: 4, d6: 6, d8: 8, d9: 10, d10: 10, d12: 12, d20: 20, d100: 10 };
     var DEFAULT_DICE_COLOR = '#202020';
     var DEFAULT_LABEL_COLOR = '#aaaaaa';
 
@@ -167,7 +167,7 @@ window.onkeydown = function(e) {
         elem.diceConfigRows.innerHTML = '';
         diceSet.forEach(function(type, i) {
             var stored = diceConfig[i] || {};
-            var faceCount = FACE_COUNTS[type] || 6;
+            var faceCount = FACE_VALUE_COUNTS[type] || 6;
             var placeholder = [];
             for (var f = 1; f <= Math.min(faceCount, 6); f++) placeholder.push('sym' + f);
             if (faceCount > 6) placeholder.push('...');
