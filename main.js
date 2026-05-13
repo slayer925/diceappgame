@@ -22,6 +22,12 @@ window.onkeydown = function(e) {
         userTyping: false
     }
     var box = null;
+    var diceConfig = []; // per-die options: [{diceColor, labelColor, faceLabels}, ...]
+
+    // Number of distinct face values per die type (used to build symbol input placeholders)
+    var FACE_VALUE_COUNTS = { d4: 4, d6: 6, d8: 8, d9: 10, d10: 10, d12: 12, d20: 20, d100: 10 };
+    var DEFAULT_DICE_COLOR = '#202020';
+    var DEFAULT_LABEL_COLOR = '#aaaaaa';
 
     that.init = function() {
         elem.container = $t.id('diceRoller');
@@ -31,6 +37,8 @@ window.onkeydown = function(e) {
         elem.instructions = $t.id('instructions');
         elem.center_div = $t.id('center_div');
         elem.diceLimit = $t.id('diceLimit');
+        elem.customizePanel = $t.id('customizePanel');
+        elem.diceConfigRows = $t.id('diceConfigRows');
 
         box = new DICE.dice_box(elem.container);
         box.bind_swipe(elem.center_div, before_roll, after_roll);
@@ -41,7 +49,7 @@ window.onkeydown = function(e) {
         $t.bind(elem.textInput, 'input', function(ev) { 
             let size = elem.textInput.value.length;
             elem.textInput.size = size > 0 ? size : 1;
-            box.setDice(textInput.value);
+            box.setDice(elem.textInput.value);
         });
         $t.bind(elem.textInput, 'focus', function(ev) {
             elem.diceLimit.style.display = 'none';
@@ -64,7 +72,7 @@ window.onkeydown = function(e) {
             ev.preventDefault();
         });
 
-        box.setDice(textInput.value);
+        box.setDice(elem.textInput.value);
         //box.start_throw(); //start by throwing all the dice on the table
 
         show_instructions(true);
@@ -86,7 +94,7 @@ window.onkeydown = function(e) {
             }
             if(numD100 === '') numD100 = '1';
             //console.log('num d100s: ' + numD100);
-            for(let i = 0; i < numD100; i++) {
+            for(let i = 0; i < parseInt(numD100, 10); i++) {
                 inputVal += '+d9';
             }
         }
@@ -112,6 +120,81 @@ window.onkeydown = function(e) {
         vars.userTyping = true;
         elem.textInput.focus();
     }
+
+    // ---- CUSTOMIZE PANEL ----
+
+    that.showCustomize = function() {
+        var notation = DICE.parse_notation(elem.textInput.value);
+        if (notation.set.length === 0) return;
+        show_numPad(false);
+        show_instructions(false);
+        _buildCustomizeRows(notation.set);
+        elem.customizePanel.style.display = 'inline-block';
+    }
+
+    that.applyCustomize = function() {
+        var rows = elem.diceConfigRows.querySelectorAll('.dice-config-row');
+        diceConfig = [];
+        rows.forEach(function(row, i) {
+            var type = row.dataset.type || '';
+            var diceColor = row.querySelector('.dc-body').value;
+            var labelColor = row.querySelector('.dc-label').value;
+            var symbolsRaw = row.querySelector('.dc-symbols').value.trim();
+            var faceLabels = symbolsRaw ? symbolsRaw.split(',').map(function(s) { return s.trim(); }) : [];
+            diceConfig[i] = { _type: type, diceColor: diceColor, labelColor: labelColor, faceLabels: faceLabels };
+        });
+        box.setDiceOptions(diceConfig);
+        elem.customizePanel.style.display = 'none';
+        show_instructions(true);
+    }
+
+    that.cancelCustomize = function() {
+        elem.customizePanel.style.display = 'none';
+        show_instructions(true);
+    }
+
+    that.resetCustomize = function() {
+        diceConfig = [];
+        box.setDiceOptions([]);
+        var rows = elem.diceConfigRows.querySelectorAll('.dice-config-row');
+        rows.forEach(function(row) {
+            row.querySelector('.dc-body').value = DEFAULT_DICE_COLOR;
+            row.querySelector('.dc-label').value = DEFAULT_LABEL_COLOR;
+            row.querySelector('.dc-symbols').value = '';
+        });
+    }
+
+    function _buildCustomizeRows(diceSet) {
+        elem.diceConfigRows.innerHTML = '';
+        diceSet.forEach(function(type, i) {
+            // Only restore saved config if it was recorded for the same die type at this position
+            var stored = (diceConfig[i] && diceConfig[i]._type === type) ? diceConfig[i] : {};
+            var faceCount = FACE_VALUE_COUNTS[type] || 6;
+            var placeholder = [];
+            for (var f = 1; f <= Math.min(faceCount, 6); f++) placeholder.push('sym' + f);
+            if (faceCount > 6) placeholder.push('...');
+
+            // Escape special characters so they don't break the value="..." HTML attribute
+            var symbolsVal = ((stored.faceLabels || []).join(','))
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            var row = document.createElement('div');
+            row.className = 'dice-config-row';
+            row.dataset.type = type;
+            row.innerHTML =
+                '<span class="dc-type">' + type + '</span>' +
+                '<label>Body <input type="color" class="dc-body" value="' + (stored.diceColor || DEFAULT_DICE_COLOR) + '"></label>' +
+                '<label>Label <input type="color" class="dc-label" value="' + (stored.labelColor || DEFAULT_LABEL_COLOR) + '"></label>' +
+                '<label class="dc-sym-label">Symbols ' +
+                    '<input type="text" class="dc-symbols" placeholder="' + placeholder.join(',') + '" ' +
+                    'value="' + symbolsVal + '">' +
+                '</label>';
+            elem.diceConfigRows.appendChild(row);
+        });
+    }
+
+    // ---- END CUSTOMIZE PANEL ----
 
     function _handleInput() {
         let text = elem.textInput.value;

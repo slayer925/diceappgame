@@ -184,6 +184,12 @@ const DICE = (function() {
         this.diceToRoll = diceToRoll;
     }
 
+    // @param options (array) - per-die options indexed by die order in the roll
+    //   each entry: { diceColor: '#rrggbb', labelColor: '#rrggbb', faceLabels: ['sym1','sym2',...] }
+    that.dice_box.prototype.setDiceOptions = function(options) {
+        this.diceOptions = options || [];
+    }
+
     //call this to roll dice programatically or from click
     that.dice_box.prototype.start_throw = function(before_roll, after_roll) {
         var box = this;
@@ -290,15 +296,18 @@ const DICE = (function() {
                 z: 0
             };
             var axis = { x: rnd(), y: rnd(), z: rnd(), a: rnd() };
-            vectors.push({ set: notation.set[i], pos: pos, velocity: velocity, angle: angle, axis: axis });
+            var dieOpts = this.diceOptions && this.diceOptions[parseInt(i)];
+            var opts = dieOpts || {};
+            vectors.push({ set: notation.set[i], pos: pos, velocity: velocity, angle: angle, axis: axis, opts: opts });
         }
         return vectors;
     }
 
-    that.dice_box.prototype.create_dice = function(type, pos, velocity, angle, axis) {
-        var dice = threeD_dice['create_' + type]();
+    that.dice_box.prototype.create_dice = function(type, pos, velocity, angle, axis, opts) {
+        var dice = threeD_dice['create_' + type](opts);
         dice.castShadow = true;
         dice.dice_type = type;
+        dice.diceOpts = opts || {};
         dice.body = new CANNON.RigidBody(CONSTS.dice_mass[type],
                 dice.geometry.cannon_shape, this.dice_body_material);
         dice.body.position.set(pos.x, pos.y, pos.z);
@@ -405,7 +414,7 @@ const DICE = (function() {
         this.iteration = 0;
         for (var i in vectors) {
             this.create_dice(vectors[i].set, vectors[i].pos, vectors[i].velocity,
-                    vectors[i].angle, vectors[i].axis);
+                    vectors[i].angle, vectors[i].axis, vectors[i].opts);
         }
     }
 
@@ -491,63 +500,128 @@ const DICE = (function() {
     // dice geometries
     let threeD_dice = {};
 
-    threeD_dice.create_d4 = function() {
+    threeD_dice.create_d4 = function(opts) {
         if (!this.d4_geometry) this.d4_geometry = create_d4_geometry(vars.scale * 1.2);
-        if (!this.d4_material) this.d4_material = new THREE.MeshFaceMaterial(
-                create_d4_materials(vars.scale / 2, vars.scale * 2, CONSTS.d4_labels[0]));
-        return new THREE.Mesh(this.d4_geometry, this.d4_material);
+        var diceColor = (opts && opts.diceColor) || vars.dice_color;
+        var labelColor = (opts && opts.labelColor) || vars.label_color;
+        var material;
+        if (opts && (opts.diceColor || opts.labelColor)) {
+            material = new THREE.MeshFaceMaterial(
+                create_d4_materials(vars.scale / 2, vars.scale * 2, CONSTS.d4_labels[0], diceColor, labelColor));
+        } else {
+            if (!this.d4_material) this.d4_material = new THREE.MeshFaceMaterial(
+                create_d4_materials(vars.scale / 2, vars.scale * 2, CONSTS.d4_labels[0], vars.dice_color, vars.label_color));
+            material = this.d4_material;
+        }
+        return new THREE.Mesh(this.d4_geometry, material);
     }
 
-    threeD_dice.create_d6 = function() {
+    threeD_dice.create_d6 = function(opts) {
         if (!this.d6_geometry) this.d6_geometry = create_d6_geometry(vars.scale * 1.1);
-        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
-                create_dice_materials(CONSTS.standart_d20_dice_face_labels, vars.scale / 2, 0.9));
-        return new THREE.Mesh(this.d6_geometry, this.dice_material);
+        var material = _make_dice_material(opts, 'd6', vars.scale / 2, 0.9, this, 'd6_material');
+        return new THREE.Mesh(this.d6_geometry, material);
     }
 
-    threeD_dice.create_d8 = function() {
+    threeD_dice.create_d8 = function(opts) {
         if (!this.d8_geometry) this.d8_geometry = create_d8_geometry(vars.scale);
-        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
-                create_dice_materials(CONSTS.standart_d20_dice_face_labels, vars.scale / 2, 1.4));
-        return new THREE.Mesh(this.d8_geometry, this.dice_material);
+        var material = _make_dice_material(opts, 'd8', vars.scale / 2, 1.4, this, 'd8_material');
+        return new THREE.Mesh(this.d8_geometry, material);
     }
 
-    threeD_dice.create_d9 = function() {
+    threeD_dice.create_d9 = function(opts) {
         if (!this.d10_geometry) this.d10_geometry = create_d10_geometry(vars.scale * 0.9);
-        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
-                create_dice_materials(CONSTS.standart_d20_dice_face_labels, vars.scale / 2, 1.0));
-        return new THREE.Mesh(this.d10_geometry, this.dice_material);
+        var material = _make_dice_material(opts, 'd9', vars.scale / 2, 1.0, this, 'd9_material');
+        return new THREE.Mesh(this.d10_geometry, material);
     }
 
-    threeD_dice.create_d10 = function() {
+    threeD_dice.create_d10 = function(opts) {
         if (!this.d10_geometry) this.d10_geometry = create_d10_geometry(vars.scale * 0.9);
-        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
-                create_dice_materials(CONSTS.standart_d20_dice_face_labels, vars.scale / 2, 1.0));
-        return new THREE.Mesh(this.d10_geometry, this.dice_material);
+        var material = _make_dice_material(opts, 'd10', vars.scale / 2, 1.0, this, 'd10_material');
+        return new THREE.Mesh(this.d10_geometry, material);
     }
 
-    threeD_dice.create_d12 = function() {
+    threeD_dice.create_d12 = function(opts) {
         if (!this.d12_geometry) this.d12_geometry = create_d12_geometry(vars.scale * 0.9);
-        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
-                create_dice_materials(CONSTS.standart_d20_dice_face_labels, vars.scale / 2, 1.0));
-        return new THREE.Mesh(this.d12_geometry, this.dice_material);
+        var material = _make_dice_material(opts, 'd12', vars.scale / 2, 1.0, this, 'd12_material');
+        return new THREE.Mesh(this.d12_geometry, material);
     }
 
-    threeD_dice.create_d20 = function() {
+    threeD_dice.create_d20 = function(opts) {
         if (!this.d20_geometry) this.d20_geometry = create_d20_geometry(vars.scale);
-        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
-                create_dice_materials(CONSTS.standart_d20_dice_face_labels, vars.scale / 2, 1.2));
-        return new THREE.Mesh(this.d20_geometry, this.dice_material);
+        var material = _make_dice_material(opts, 'd20', vars.scale / 2, 1.2, this, 'd20_material');
+        return new THREE.Mesh(this.d20_geometry, material);
     }
 
-    threeD_dice.create_d100 = function() {
+    threeD_dice.create_d100 = function(opts) {
         if (!this.d10_geometry) this.d10_geometry = create_d10_geometry(vars.scale * 0.9);
-        if (!this.d100_material) this.d100_material = new THREE.MeshFaceMaterial(
-                create_dice_materials(CONSTS.standart_d100_dice_face_labels, vars.scale / 2, 1.5));
-        return new THREE.Mesh(this.d10_geometry, this.d100_material);
+        var diceColor = (opts && opts.diceColor) || vars.dice_color;
+        var labelColor = (opts && opts.labelColor) || vars.label_color;
+        var material;
+        var hasCustom = opts && (opts.diceColor || opts.labelColor || (opts.faceLabels && opts.faceLabels.length));
+        if (hasCustom) {
+            var labels;
+            if (opts.faceLabels && opts.faceLabels.length) {
+                // d100 face layout: [' ', label_for_0, label_for_10, ..., label_for_90]
+                labels = [' '];
+                for (var v = 0; v <= 9; v++) {
+                    var sym = opts.faceLabels[v];
+                    labels.push((sym !== undefined && sym !== '') ? String(sym) : CONSTS.standart_d100_dice_face_labels[v + 1]);
+                }
+            } else {
+                labels = CONSTS.standart_d100_dice_face_labels;
+            }
+            material = new THREE.MeshFaceMaterial(
+                create_dice_materials(labels, vars.scale / 2, 1.5, diceColor, labelColor));
+        } else {
+            if (!this.d100_material) this.d100_material = new THREE.MeshFaceMaterial(
+                create_dice_materials(CONSTS.standart_d100_dice_face_labels, vars.scale / 2, 1.5, vars.dice_color, vars.label_color));
+            material = this.d100_material;
+        }
+        return new THREE.Mesh(this.d10_geometry, material);
+    }
+
+    // @brief helper: create material for a standard (non-d4/non-d100) die, with caching for defaults
+    function _make_dice_material(opts, dieType, size, margin, cache, cacheKey) {
+        var hasCustom = opts && (opts.diceColor || opts.labelColor || (opts.faceLabels && opts.faceLabels.length));
+        // Slice the standard label array to only the faces this die type actually uses
+        var stdLabels = CONSTS.standart_d20_dice_face_labels.slice(0, CONSTS.dice_face_range[dieType][1] + 2);
+        if (hasCustom) {
+            var labels = (opts.faceLabels && opts.faceLabels.length)
+                ? build_custom_labels(opts.faceLabels, dieType)
+                : stdLabels;
+            var diceColor = opts.diceColor || vars.dice_color;
+            var labelColor = opts.labelColor || vars.label_color;
+            return new THREE.MeshFaceMaterial(create_dice_materials(labels, size, margin, diceColor, labelColor));
+        }
+        if (!cache[cacheKey]) {
+            cache[cacheKey] = new THREE.MeshFaceMaterial(
+                create_dice_materials(stdLabels, size, margin, vars.dice_color, vars.label_color));
+        }
+        return cache[cacheKey];
+    }
+
+    // @brief build a labels array for custom face symbols
+    // @param symbols (array of strings) - one per face value, in order from dice_face_range[dieType][0] to [1]
+    // @param dieType (string) - e.g. 'd6'
+    // Labels array layout: materialIndex = face_value + 1, so labels[face_value + 1] = label for that face.
+    // Indexes 0..range[0] are blank (back face + placeholder for any face values below range[0]).
+    // This mirrors the layout of standart_d20_dice_face_labels used by create_dice_materials.
+    function build_custom_labels(symbols, dieType) {
+        var range = CONSTS.dice_face_range[dieType];
+        // Prepend (range[0] + 1) blanks: index 0 = back face, indexes 1..range[0] = unused placeholders
+        // (e.g. d6 has range[0]=1 so 2 blanks; d10 has range[0]=0 so just 1 blank)
+        var labels = [];
+        for (var j = 0; j <= range[0]; j++) labels.push(' ');
+        for (var v = range[0]; v <= range[1]; v++) {
+            var idx = v - range[0];
+            labels.push((symbols[idx] !== undefined && symbols[idx] !== '') ? String(symbols[idx]) : String(v));
+        }
+        return labels;
     }
     
-    function create_dice_materials(face_labels, size, margin) {
+    function create_dice_materials(face_labels, size, margin, diceColor, labelColor) {
+        var backColor = diceColor || vars.dice_color;
+        var textColor = labelColor || vars.label_color;
         function create_text_texture(text, color, back_color) {
             if (text == undefined) return null;
             var canvas = document.createElement("canvas");
@@ -571,11 +645,13 @@ const DICE = (function() {
         var materials = [];
         for (var i = 0; i < face_labels.length; ++i)
             materials.push(new THREE.MeshPhongMaterial($t.copyto(vars.material_options,
-                        { map: create_text_texture(face_labels[i], vars.label_color, vars.dice_color) })));
+                        { map: create_text_texture(face_labels[i], textColor, backColor) })));
         return materials;
     }
 
-    function create_d4_materials(size, margin, labels) {
+    function create_d4_materials(size, margin, labels, diceColor, labelColor) {
+        var backColor = diceColor || vars.dice_color;
+        var textColor = labelColor || vars.label_color;
         function create_d4_text(text, color, back_color) {
             var canvas = document.createElement("canvas");
             var context = canvas.getContext("2d");
@@ -601,7 +677,7 @@ const DICE = (function() {
         var materials = [];
         for (var i = 0; i < labels.length; ++i)
             materials.push(new THREE.MeshPhongMaterial($t.copyto(vars.material_options,
-                        { map: create_d4_text(labels[i], vars.label_color, vars.dice_color) })));
+                        { map: create_d4_text(labels[i], textColor, backColor) })));
         return materials;
     }
 
@@ -837,8 +913,10 @@ const DICE = (function() {
         }
         if (dice.dice_type == 'd4' && num != 0) {
             if (num < 0) num += 4;
+            var opts = dice.diceOpts || {};
             dice.material = new THREE.MeshFaceMaterial(
-                    create_d4_materials(vars.scale / 2, vars.scale * 2, CONSTS.d4_labels[num]));
+                    create_d4_materials(vars.scale / 2, vars.scale * 2, CONSTS.d4_labels[num],
+                        opts.diceColor, opts.labelColor));
         }
         dice.geometry = geom;
     }

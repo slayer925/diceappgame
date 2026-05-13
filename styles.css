@@ -80,6 +80,9 @@ header {
     text-align: center;
     width: 100%;
     background-color: rgba(150,150,150,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #textInput { 
@@ -87,10 +90,21 @@ header {
     border: none;
     color: rgba(0, 0, 0, 0.8);
     background-color: rgba(199, 199, 199, 0.7);
-    width: 100%;
+    flex: 1;
     text-overflow: ellipsis;
     padding: 0.2em;
     text-decoration: none;
+}
+
+#customizeBtn {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.2em 0.4em;
+    line-height: 1;
+    opacity: 0.85;
 }
 
 #textInput:focus {
@@ -177,4 +191,107 @@ header {
     padding: 0.5em;
     margin-left: 5px;
     margin-right: 5px;
+}
+
+/* ******* CUSTOMIZE PANEL ******* */
+
+#customizePanel {
+    overflow-y: auto;
+}
+
+#customizePanelContent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 480px);
+    max-height: 80vh;
+    overflow-y: auto;
+    background-color: rgba(255, 255, 255, 0.93);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+#customizePanelContent h3 {
+    text-align: center;
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+    color: #202020;
+}
+
+#diceConfigRows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dice-config-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.dc-type {
+    font-weight: bold;
+    min-width: 2.5rem;
+    font-size: 0.9rem;
+    color: #202020;
+}
+
+.dice-config-row label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: #333;
+}
+
+.dice-config-row input[type="color"] {
+    width: 2rem;
+    height: 1.5rem;
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.dc-sym-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.dc-sym-label input[type="text"] {
+    font-size: 0.8rem;
+    width: 100%;
+    padding: 0.15em 0.3em;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    background: white;
+}
+
+.customize-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+}
+
+.customize-buttons button {
+    padding: 0.4em 1em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background-color: rgba(50, 50, 50, 0.8);
+    color: white;
+}
+
+.customize-buttons button:hover {
+    background-color: rgba(50, 50, 50, 1);
 }
